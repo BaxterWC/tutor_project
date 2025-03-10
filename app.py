@@ -1,7 +1,16 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, redirect
+import sqlite3
+from sqlite3 import Error
 
 app = Flask(__name__)
 
+def connect_to_database(db_file):
+    try:
+        connection = sqlite3.connect(db_file)
+        return connection
+    except Error:
+        print("an error has occurred connecting to the database")
+    return
 
 @app.route('/')
 def render_home():  # put application's code here
@@ -13,7 +22,25 @@ def render_schedule():  # put application's code here
     return render_template('schedule.html')
 
 
-@app.route('/login', methods=['POST, GET'])
+@app.route('/signup', methods=['POST', 'GET'])
+def render_signup():  # put application's code here
+    if request.method == 'POST':
+        fname = request.form.get('user_fname').title().strip()
+        lname = request.form.get('user_lname').title().strip()
+        email = request.form.get('user_email').lower().strip()
+        password = request.form.get('user_password')
+        password2 = request.form.get('user_password2')
+
+        if password != password2:
+            return redirect("\signup?error=passwords+do+not+match")
+
+        if len(password) < 8:
+            return redirect("\signup?error=password+is+too+short")
+
+    return render_template('signup.html')
+
+
+@app.route('/login', methods=['POST', 'GET'])
 def render_login():  # put application's code here
     return render_template('login.html')
 
