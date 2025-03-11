@@ -2,7 +2,9 @@ from flask import Flask, render_template, request, redirect
 import sqlite3
 from sqlite3 import Error
 
+DATABASE = "tutor_db"
 app = Flask(__name__)
+
 
 def connect_to_database(db_file):
     try:
@@ -11,6 +13,7 @@ def connect_to_database(db_file):
     except Error:
         print("an error has occurred connecting to the database")
     return
+
 
 @app.route('/')
 def render_home():  # put application's code here
@@ -36,6 +39,13 @@ def render_signup():  # put application's code here
 
         if len(password) < 8:
             return redirect("\signup?error=password+is+too+short")
+
+        con = connect_to_database(DATABASE)
+        quer_insert = "INSERT INTO user(fname, lname, email, password) VALUES (?, ?, ?, ?)"
+        cur = con.cursor()
+        cur.execute(quer_insert, (fname, lname, email, password))
+        con.commit()
+        con.close()
 
     return render_template('signup.html')
 
