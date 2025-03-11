@@ -43,6 +43,11 @@ def render_signup():  # put application's code here
         con = connect_to_database(DATABASE)
         quer_insert = "INSERT INTO user(fname, lname, email, password) VALUES (?, ?, ?, ?)"
         cur = con.cursor()
+        query1 = "SELECT email FROM user"
+        cur.execute(query1)
+        all_emails = cur.fetchall()
+        if (email,) in all_emails:
+            return redirect("\signup?error=email+already+in+use")
         cur.execute(quer_insert, (fname, lname, email, password))
         con.commit()
         con.close()
@@ -53,11 +58,6 @@ def render_signup():  # put application's code here
 @app.route('/login', methods=['POST', 'GET'])
 def render_login():  # put application's code here
     return render_template('login.html')
-
-
-@app.route('/about')
-def render_about():  # put application's code here
-    return render_template('about.html')
 
 
 if __name__ == '__main__':
