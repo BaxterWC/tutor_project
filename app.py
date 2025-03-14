@@ -1,10 +1,10 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, session
 import sqlite3
 from sqlite3 import Error
 
 DATABASE = "tutor_db"
 app = Flask(__name__)
-
+app.secret_key = "secret_key"
 
 def connect_to_database(db_file):
     try:
@@ -57,7 +57,28 @@ def render_signup():  # put application's code here
 
 @app.route('/login', methods=['POST', 'GET'])
 def render_login():  # put application's code here
+    if request.method == 'POST':
+        email = request.form['user_email'].lower().strip()
+        password = request.form['user_password']
+
+        query2 = "SELECT user_id, fname, password FROM user WHERE email = ?"
+        con = connect_to_database(DATABASE)
+        cur = con.cursor()
+        cur.execute(query2, (email, ))
+        user_info = cur.fetchall()
+        con.close()
+
+        session['user_id'] = user_info[0]
+        session['email'] = user_info[1]
+
+        if password in user_info:
+            return redirect("home.html")
+        else:
+            return redirect("\signup?error=email+already+in+use")
+
     return render_template('login.html')
+
+
 
 
 if __name__ == '__main__':
