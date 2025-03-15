@@ -17,12 +17,40 @@ def connect_to_database(db_file):
 
 @app.route('/')
 def render_home():  # put application's code here
-    return render_template('home.html')
+    user_name = None
 
+    if 'user_id' in session:
+        con = connect_to_database(DATABASE)
+        cur = con.cursor()
+        query = "SELECT fname FROM user WHERE user_id = ?"
+        cur.execute(query, (session['user_id'],))
+        guy = cur.fetchone()
+        con.close()
+
+        if guy:
+            user_name = guy[0]
+
+    return render_template('home.html', user_name=user_name)
 
 @app.route('/schedule')
 def render_schedule():  # put application's code here
-    return render_template('schedule.html')
+    con = connect_to_database(DATABASE)
+    cur = con.cursor()
+    query = """
+           SELECT sessions.date, sessions.time, sessions.subject, user.fname || ' ' || user.lname AS tutor_name, sessions.location
+           FROM sessions
+           JOIN user ON sessions.tutor_id = user.user_id
+           ORDER BY sessions.date, sessions.time;
+       """
+
+    cur.execute(query)
+    sessions = cur.fetchall()
+    con.close()
+
+    session_list = [{'date': s[0], 'time': s[1], 'subject': s[2], 'tutor_name': s[3], 'location': s[4]} for s in
+                    sessions]
+
+    return render_template('schedule.html', sessions=session_list)
 
 
 @app.route('/signup', methods=['POST', 'GET'])
@@ -33,6 +61,7 @@ def render_signup():  # put application's code here
         email = request.form.get('user_email').lower().strip()
         password = request.form.get('user_password')
         password2 = request.form.get('user_password2')
+        role = request.form.get('user_role')
 
         if password != password2:
             return redirect("\signup?error=passwords+do+not+match")
@@ -41,14 +70,14 @@ def render_signup():  # put application's code here
             return redirect("\signup?error=password+is+too+short")
 
         con = connect_to_database(DATABASE)
-        quer_insert = "INSERT INTO user(fname, lname, email, password) VALUES (?, ?, ?, ?)"
+        quer_insert = "INSERT INTO user(fname, lname, email, password, role) VALUES (?, ?, ?, ?, ?)"
         cur = con.cursor()
         query1 = "SELECT email FROM user"
         cur.execute(query1)
         all_emails = cur.fetchall()
         if (email,) in all_emails:
             return redirect("\signup?error=email+already+in+use")
-        cur.execute(quer_insert, (fname, lname, email, password))
+        cur.execute(quer_insert, (fname, lname, email, password, role))
         con.commit()
         con.close()
 
@@ -56,30 +85,65 @@ def render_signup():  # put application's code here
 
 
 @app.route('/login', methods=['POST', 'GET'])
-def render_login():  # put application's code here
+def render_login_page():
     if request.method == 'POST':
-        email = request.form['user_email'].lower().strip()
-        password = request.form['user_password']
+        email = request.form.get('user_email').lower().strip()
+        password = request.form.get('user_password')
 
-        query2 = "SELECT user_id, fname, password FROM user WHERE email = ?"
         con = connect_to_database(DATABASE)
-        cur = con.cursor()
-        cur.execute(query2, (email, ))
-        user_info = cur.fetchall()
-        con.close()
+        if con:
+            cur = con.cursor()
+            query = "SELECT user_id, email, password, fname FROM user WHERE email = ?"
+            cur.execute(query, (email,))
+            user_info = cur.fetchone()
+            con.close()
 
-        session['user_id'] = user_info[0]
-        session['email'] = user_info[1]
+            if user_info:
 
-        if password in user_info:
-            return redirect("home.html")
-        else:
-            return redirect("\signup?error=email+already+in+use")
+                if user_info[2] == password:
+                    session['user_id'] = user_info[0]
+                    session['email'] = user_info[1]
+                    session['fname'] = user_info[3]
+                    return redirect("/")
+
+        return redirect("\login?error=invalid+credentials")
 
     return render_template('login.html')
 
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect("/")
 
 
+@app.route('/create_session', methods=['POST', 'GET'])
+def create_session():
+    if 'user_id' not in session:
+        return redirect("\login?error=Please+log+in")
+
+    con = connect_to_database(DATABASE)
+    cur = con.cursor()
+
+    cur.execute("SELECT role FROM user WHERE user_id = ?", (session['user_id'],))
+    role = cur.fetchone()
+
+    if role[0] == 'Tutor':
+        if request.method == 'POST':
+            subject = request.form.get('subject')
+            date = request.form.get('date')
+            time = request.form.get('time')
+            location = request.form.get('location')
+
+            query = "INSERT INTO sessions (tutor_id, subject, date, time, location) VALUES (?, ?, ?, ?, ?)"
+            cur.execute(query, (session['user_id'], subject, date, time, location))
+            con.commit()
+            con.close()
+            return redirect("/schedule")
+    else:
+        return redirect("\schedule?error=Only+tutors+can+create+sessions")
+    con.close()
+
+    return render_template('create_session.html')
 
 if __name__ == '__main__':
     app.run()

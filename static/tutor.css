@@ -147,18 +147,23 @@ a, a:visited {
 }
 
 .form-group {
-    padding-top: 3rem;
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
 }
 
 .form-label {
-    width: 30%;
-    float: left;
-    padding: 0.3rem;
+    width: 150px; /* Adjust width for label alignment */
+    text-align: right;
+    margin-right: 10px;
 }
 
 .form-element {
-    width: 70%;
-    float: left;
+    flex: 1;
+}
+
+input[type="radio"] {
+    margin-right: 5px;
 }
 
 .button-group {
@@ -176,7 +181,34 @@ a, a:visited {
 }
 
 table {
+    width: 100%;
     border-collapse: collapse;
+    margin-top: 20px;
+    background: white;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+}
+
+th {
+    background-color: #319A71;
+    color: white;
+}
+
+td {
+    min-width: 100px;
+}
+
+.schedule-table th {
+    text-align: center;
+}
+
+.schedule-table td {
+    vertical-align: middle;
+    text-align: center;
 }
 
 .cart-table > thead {
@@ -210,3 +242,4 @@ table {
         width: 100%;
     }
 }
+

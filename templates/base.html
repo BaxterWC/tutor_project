@@ -17,7 +17,12 @@
         <div class="navbar-links">
             <a href="/">Home</a>
             <a href="/schedule">Schedule</a>
-            <a href="/login">Log In</a>
+            {% if session['user_id'] %}
+                <a href="/logout">Log Out</a>
+            {% else %}
+                <a href="/login">Log In</a>
+            {% endif %}
+            <a href="/create_session">Create Session</a>
         </div>
     </div>
 </nav>
@@ -32,6 +37,7 @@
         {% endblock %}
     </main>
 </div>
+
 </body>
 
 </html>

@@ -1,7 +1,15 @@
 {% extends "base.html" %}
 
-{% block pageheading %}<br>The finest tutoring this side of the basin reserve!{% endblock %}
+{% block pageheading %}
+    {% if user_name %}
+        <br>Welcome, {{  user_name }}!
+    {% else %}
+        <br>Welcome to Happy Tutoring! Please log in.
+    {%  endif %}
+{% endblock %}
 
 {% block main %}
-<strong><em></em></strong>
+    <div style="text-align: center">
+        </br> <img src="{{ url_for('static', filename='tutoring.jpg') }}" alt="Tutoring Image">
+    </div>
 {% endblock %}
