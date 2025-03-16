@@ -32,12 +32,13 @@ def render_home():  # put application's code here
 
     return render_template('home.html', user_name=user_name)
 
+
 @app.route('/schedule')
 def render_schedule():  # put application's code here
     con = connect_to_database(DATABASE)
     cur = con.cursor()
     query = """
-           SELECT sessions.date, sessions.time, sessions.subject, user.fname || ' ' || user.lname AS tutor_name, sessions.location
+           SELECT sessions.date, sessions.time, sessions.subject, user.fname || ' ' || user.lname AS tutor_name, sessions.location, sessions.session_id 
            FROM sessions
            JOIN user ON sessions.tutor_id = user.user_id
            ORDER BY sessions.date, sessions.time;
@@ -47,7 +48,7 @@ def render_schedule():  # put application's code here
     sessions = cur.fetchall()
     con.close()
 
-    session_list = [{'date': s[0], 'time': s[1], 'subject': s[2], 'tutor_name': s[3], 'location': s[4]} for s in
+    session_list = [{'date': s[0], 'time': s[1], 'subject': s[2], 'tutor_name': s[3], 'location': s[4], 'session_id': s[5]} for s in
                     sessions]
 
     return render_template('schedule.html', sessions=session_list)
@@ -144,6 +145,59 @@ def create_session():
     con.close()
 
     return render_template('create_session.html')
+
+
+@app.route('/apply_session', methods=['POST'])
+def apply_session():
+    if 'user_id' not in session:
+        return redirect("/login?error=Please+log+in")
+
+    session_id = request.form.get('session_id')
+    user_id = session['user_id']
+
+    con = connect_to_database(DATABASE)
+    cur = con.cursor()
+
+    cur.execute("SELECT * FROM applied_sessions WHERE user_id = ? AND session_id = ?", (user_id, session_id))
+    existing_application = cur.fetchone()
+
+    if existing_application:
+        con.close()
+        return redirect("/schedule?error=Already+applied")
+
+    cur.execute("INSERT INTO applied_sessions (user_id, session_id) VALUES (?, ?)", (user_id, session_id))
+    con.commit()
+    con.close()
+
+    return redirect("/your_sessions")
+
+
+@app.route('/your_sessions')
+def your_sessions():
+    if 'user_id' not in session:
+        return redirect("/login?error=Please+log+in")
+
+    user_id = session['user_id']
+    con = connect_to_database(DATABASE)
+    cur = con.cursor()
+
+    query = """
+        SELECT s.session_id, s.date, s.time, s.subject, u.fname || ' ' || u.lname AS tutor_name, s.location
+        FROM applied_sessions a
+        JOIN sessions s ON a.session_id = s.session_id
+        JOIN user u ON s.tutor_id = u.user_id
+        WHERE a.user_id = ?
+        ORDER BY s.date, s.time;
+    """
+
+    cur.execute(query, (user_id,))
+    applied_sessions = cur.fetchall()
+    con.close()
+
+    session_list = [{'session_id': s[0], 'date': s[1], 'time': s[2], 'subject': s[3], 'tutor_name': s[4], 'location': s[5]} for s in applied_sessions]
+
+    return render_template('your_sessions.html', sessions=session_list)
+
 
 if __name__ == '__main__':
     app.run()

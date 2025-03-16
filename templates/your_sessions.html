@@ -1,11 +1,7 @@
 {% extends 'base.html' %}
 
-{% block pageheading %}
-    <br>Schedule
-{% endblock %}
-
 {% block main %}
-    <h2>Upcoming Tutoring Sessions</h2>
+    <h2></br>Your Sessions</h2>
 
     {% if sessions %}
         <table class="schedule-table">
@@ -16,7 +12,6 @@
                     <th>Subject</th>
                     <th>Tutor</th>
                     <th>Location</th>
-                    <th>Apply</th>
                 </tr>
             </thead>
             <tbody>
@@ -27,17 +22,11 @@
                         <td>{{ session.subject }}</td>
                         <td>{{ session.tutor_name }}</td>
                         <td>{{ session.location }}</td>
-                        <td>
-                            <form action="/apply_session" method="post">
-                                <input type="hidden" name="session_id" value="{{ session.session_id }}">
-                                <button type="submit">Apply</button>
-                            </form>
-                        </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
     {% else %}
-        <p>No upcoming sessions.</p>
+        <p>You haven't applied for any sessions yet.</p>
     {% endif %}
 {% endblock %}
